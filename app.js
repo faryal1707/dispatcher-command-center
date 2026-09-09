@@ -37,42 +37,83 @@ const money = n =>
 // ============================================================
 
 function setupSupabase() {
-  const url = window.DISPATCHOS_SUPABASE_URL;
-  const key = window.DISPATCHOS_SUPABASE_ANON_KEY;
 
-  if (
-    !url ||
-    !key ||
-    url.includes('PASTE_') ||
-    key.includes('PASTE_')
-  ) {
-    console.log('DispatchOS running in Local Mode.');
+  const url = 'https://evcshsbyqkzhjtibfugo.supabase.co';
+
+  const key = String(
+    window.DISPATCHOS_SUPABASE_ANON_KEY || ''
+  ).trim();
+
+  console.log(
+    'Supabase URL:',
+    url
+  );
+
+  console.log(
+    'Supabase key detected:',
+    key.startsWith('sb_publishable_')
+  );
+
+  if (!key) {
+    console.error(
+      'Supabase publishable key is missing.'
+    );
+
     createAccountBar();
-    updateAccountBar();
+    updateAccountBar(
+      '⚠️ Supabase key is missing.'
+    );
+
     return;
   }
 
   if (!window.supabase) {
-    console.error('Supabase library did not load.');
+    console.error(
+      'Supabase library did not load.'
+    );
+
     createAccountBar();
-    updateAccountBar();
+    updateAccountBar(
+      '⚠️ Supabase library failed to load.'
+    );
+
     return;
   }
 
   try {
-    supabaseClient = window.supabase.createClient(url, key);
+
+    supabaseClient =
+      window.supabase.createClient(
+        url,
+        key
+      );
+
     cloudEnabled = true;
 
-    console.log('DispatchOS Supabase connection initialized.');
+    console.log(
+      '✅ DispatchOS Supabase connection initialized.'
+    );
 
     createAccountBar();
 
     initializeAuth();
+
   } catch (error) {
-    console.error('Supabase setup failed:', error);
+
+    console.error(
+      '❌ Supabase setup failed:',
+      error
+    );
+
+    cloudEnabled = false;
+
     createAccountBar();
-    updateAccountBar();
+
+    updateAccountBar(
+      '⚠️ Supabase connection failed.'
+    );
   }
+}
 }
 
 
