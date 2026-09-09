@@ -7,6 +7,7 @@
   <title>🚛 Dispatcher Command Center</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <header class="hero">
     <div>
@@ -14,6 +15,7 @@
       <h1>Dispatcher Command Center</h1>
       <p>Manage trucks, loads, issues, learning, and your progress in one place.</p>
     </div>
+
     <div class="hero-actions">
       <span class="pill">⭐ <strong id="xpTop">0</strong> XP</span>
       <span class="pill">🔥 Streak <strong id="streak">1</strong></span>
@@ -22,11 +24,27 @@
   </header>
 
   <main class="shell">
+
     <section class="stats-grid">
-      <article class="stat-card"><span>🚚 Active Trucks</span><strong id="statTrucks">0</strong></article>
-      <article class="stat-card"><span>📦 Active Loads</span><strong id="statLoads">0</strong></article>
-      <article class="stat-card"><span>💰 Gross Recorded</span><strong id="statGross">$0</strong></article>
-      <article class="stat-card"><span>⚠️ Open Issues</span><strong id="statIssues">0</strong></article>
+      <article class="stat-card">
+        <span>🚚 Active Trucks</span>
+        <strong id="statTrucks">0</strong>
+      </article>
+
+      <article class="stat-card">
+        <span>📦 Active Loads</span>
+        <strong id="statLoads">0</strong>
+      </article>
+
+      <article class="stat-card">
+        <span>💰 Gross Recorded</span>
+        <strong id="statGross">$0</strong>
+      </article>
+
+      <article class="stat-card">
+        <span>⚠️ Open Issues</span>
+        <strong id="statIssues">0</strong>
+      </article>
     </section>
 
     <nav class="tabs" aria-label="Sections">
@@ -41,133 +59,416 @@
 
     <section id="today" class="panel active-panel">
       <div class="two-col">
+
         <article class="card">
-          <div class="card-head"><div><span class="eyebrow">🎯 DAILY MISSIONS</span><h2>Today's priorities</h2></div><span class="pill"><b id="missionDone">0</b>/<b id="missionTotal">0</b></span></div>
+          <div class="card-head">
+            <div>
+              <span class="eyebrow">🎯 DAILY MISSIONS</span>
+              <h2>Today's priorities</h2>
+            </div>
+
+            <span class="pill">
+              <b id="missionDone">0</b>/<b id="missionTotal">0</b>
+            </span>
+          </div>
+
           <form id="missionForm" class="inline-form">
-            <input id="missionText" maxlength="120" required placeholder="Book Truck 204 before 11 AM" />
+            <input
+              id="missionText"
+              maxlength="120"
+              required
+              placeholder="Book Truck 204 before 11 AM"
+            />
+
             <button class="primary">➕ Add</button>
           </form>
+
           <div id="missionList" class="stack"></div>
         </article>
 
         <article class="card">
-          <span class="eyebrow">📣 SHIFT FOCUS</span><h2>Dispatcher priorities</h2>
+          <span class="eyebrow">📣 SHIFT FOCUS</span>
+          <h2>Dispatcher priorities</h2>
+
           <div class="stack compact">
-            <div class="notice danger">🔴 <b>Critical:</b> Protect appointments and solve service problems.</div>
-            <div class="notice warn">🟡 <b>Revenue:</b> Keep empty trucks covered and control deadhead.</div>
-            <div class="notice good">🟢 <b>Growth:</b> Document one useful case or learning note daily.</div>
+            <div class="notice danger">
+              🔴 <b>Critical:</b> Protect appointments and solve service problems.
+            </div>
+
+            <div class="notice warn">
+              🟡 <b>Revenue:</b> Keep empty trucks covered and control deadhead.
+            </div>
+
+            <div class="notice good">
+              🟢 <b>Growth:</b> Document one useful case or learning note daily.
+            </div>
           </div>
         </article>
       </div>
 
       <article class="card">
-        <div class="card-head"><div><span class="eyebrow">📍 LIVE BOARD</span><h2>Attention needed</h2></div><span class="pill" id="shiftState">⚪ Off Shift</span></div>
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">📍 LIVE BOARD</span>
+            <h2>Attention needed</h2>
+          </div>
+
+          <span class="pill" id="shiftState">⚪ Off Shift</span>
+        </div>
+
         <div id="attentionBoard" class="three-col"></div>
       </article>
     </section>
 
     <section id="fleet" class="panel">
       <article class="card">
-        <span class="eyebrow">🚚 FLEET CONTROL</span><h2>Add and monitor trucks</h2>
+        <span class="eyebrow">🚚 FLEET CONTROL</span>
+        <h2>Add and monitor trucks</h2>
+
         <form id="truckForm" class="form-grid four">
           <input id="truckNo" required maxlength="20" placeholder="Truck #" />
-          <input id="driverName" required maxlength="60" placeholder="Driver name" />
-          <select id="equipment"><option>Dry Van</option><option>Reefer</option><option>Flatbed</option><option>Stepdeck</option><option>Conestoga</option><option>Power Only</option><option>Box Truck</option></select>
-          <input id="truckLoc" maxlength="80" placeholder="Current location" />
+
+          <input
+            id="driverName"
+            required
+            maxlength="60"
+            placeholder="Driver name"
+          />
+
+          <select id="equipment">
+            <option>Dry Van</option>
+            <option>Reefer</option>
+            <option>Flatbed</option>
+            <option>Stepdeck</option>
+            <option>Conestoga</option>
+            <option>Power Only</option>
+            <option>Box Truck</option>
+          </select>
+
+          <input
+            id="truckLoc"
+            maxlength="80"
+            placeholder="Current location"
+          />
+
           <button class="primary">➕ Add Truck</button>
         </form>
       </article>
+
       <div id="truckList" class="two-col"></div>
     </section>
 
     <section id="loads" class="panel">
       <article class="card">
-        <span class="eyebrow">📦 LOAD TRACKER</span><h2>Record every booked load</h2>
+        <span class="eyebrow">📦 LOAD TRACKER</span>
+        <h2>Record every booked load</h2>
+
         <form id="loadForm" class="form-grid three">
-          <input id="loadTruck" required maxlength="20" placeholder="Truck #" />
-          <input id="loadBroker" required maxlength="70" placeholder="Broker" />
-          <input id="loadRate" required type="number" min="0" max="50000" step="1" placeholder="Rate $" />
-          <input id="origin" required maxlength="80" placeholder="Origin" />
-          <input id="destination" required maxlength="80" placeholder="Destination" />
-          <input id="miles" type="number" min="1" max="5000" placeholder="Loaded miles" />
-          <select id="loadStatus"><option>Booked</option><option>At Pickup</option><option>In Transit</option><option>At Delivery</option><option>Delivered</option></select>
-          <select id="source"><option>DAT</option><option>Broker Relationship</option></select>
+          <input
+            id="loadTruck"
+            required
+            maxlength="20"
+            placeholder="Truck #"
+          />
+
+          <input
+            id="loadBroker"
+            required
+            maxlength="70"
+            placeholder="Broker"
+          />
+
+          <input
+            id="loadRate"
+            required
+            type="number"
+            min="0"
+            max="50000"
+            step="1"
+            placeholder="Rate $"
+          />
+
+          <input
+            id="origin"
+            required
+            maxlength="80"
+            placeholder="Origin"
+          />
+
+          <input
+            id="destination"
+            required
+            maxlength="80"
+            placeholder="Destination"
+          />
+
+          <input
+            id="miles"
+            type="number"
+            min="1"
+            max="5000"
+            placeholder="Loaded miles"
+          />
+
+          <select id="loadStatus">
+            <option>Booked</option>
+            <option>At Pickup</option>
+            <option>In Transit</option>
+            <option>At Delivery</option>
+            <option>Delivered</option>
+          </select>
+
+          <select id="source">
+            <option>DAT</option>
+            <option>Broker Relationship</option>
+          </select>
+
           <button class="primary">💾 Save Load</button>
         </form>
       </article>
+
       <div id="loadList" class="stack"></div>
     </section>
 
     <section id="issues" class="panel">
       <article class="card">
-        <span class="eyebrow">🚨 OPEN ISSUES DESK</span><h2>Never lose track of a problem</h2>
+        <span class="eyebrow">🚨 OPEN ISSUES DESK</span>
+        <h2>Never lose track of a problem</h2>
+
         <form id="issueForm" class="form-grid three">
-          <input id="issueTitle" required maxlength="100" placeholder="Issue title" />
-          <select id="issueType"><option>Driver</option><option>Broker</option><option>Pickup</option><option>Delivery</option><option>Detention</option><option>Breakdown</option><option>Rate Con</option><option>POD</option><option>Payment</option><option>Other</option></select>
-          <select id="issuePriority"><option>🔴 Critical</option><option>🟡 Medium</option><option>🟢 Low</option></select>
-          <textarea id="issueDetails" maxlength="350" rows="3" placeholder="What happened? What is pending?"></textarea>
+          <input
+            id="issueTitle"
+            required
+            maxlength="100"
+            placeholder="Issue title"
+          />
+
+          <select id="issueType">
+            <option>Driver</option>
+            <option>Broker</option>
+            <option>Pickup</option>
+            <option>Delivery</option>
+            <option>Detention</option>
+            <option>Breakdown</option>
+            <option>Rate Con</option>
+            <option>POD</option>
+            <option>Payment</option>
+            <option>Other</option>
+          </select>
+
+          <select id="issuePriority">
+            <option>🔴 Critical</option>
+            <option>🟡 Medium</option>
+            <option>🟢 Low</option>
+          </select>
+
+          <textarea
+            id="issueDetails"
+            maxlength="350"
+            rows="3"
+            placeholder="What happened? What is pending?"
+          ></textarea>
+
           <button class="primary">🚨 Open Issue</button>
         </form>
       </article>
+
       <div id="issueList" class="stack"></div>
     </section>
 
     <section id="library" class="panel">
       <article class="card">
-        <div class="card-head"><div><span class="eyebrow">🧠 DISPATCHER INTELLIGENCE</span><h2>Problem → Solution Library</h2></div><input id="caseSearch" maxlength="100" placeholder="🔎 Search cases..." /></div>
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">🧠 DISPATCHER INTELLIGENCE</span>
+            <h2>Problem → Solution Library</h2>
+          </div>
+
+          <input
+            id="caseSearch"
+            maxlength="100"
+            placeholder="🔎 Search cases..."
+          />
+        </div>
+
         <form id="caseForm" class="form-grid two">
-          <input id="caseProblem" required maxlength="120" placeholder="Problem / situation" />
-          <input id="caseCategory" maxlength="60" placeholder="Category e.g. detention" />
-          <textarea id="caseSolution" required maxlength="500" rows="4" placeholder="What worked? Steps you took..."></textarea>
-          <textarea id="caseLesson" maxlength="500" rows="4" placeholder="What would you do next time?"></textarea>
-          <button class="primary wide">🧠 Save Case +25 XP</button>
+          <input
+            id="caseProblem"
+            required
+            maxlength="120"
+            placeholder="Problem / situation"
+          />
+
+          <input
+            id="caseCategory"
+            maxlength="60"
+            placeholder="Category e.g. detention"
+          />
+
+          <textarea
+            id="caseSolution"
+            required
+            maxlength="500"
+            rows="4"
+            placeholder="What worked? Steps you took..."
+          ></textarea>
+
+          <textarea
+            id="caseLesson"
+            maxlength="500"
+            rows="4"
+            placeholder="What would you do next time?"
+          ></textarea>
+
+          <button class="primary wide">
+            🧠 Save Case +25 XP
+          </button>
         </form>
       </article>
+
       <div id="caseList" class="stack"></div>
     </section>
 
     <section id="learning" class="panel">
       <article class="card">
-        <span class="eyebrow">🎓 LEARNING CENTER</span><h2>Turn courses and work into skills</h2>
+        <span class="eyebrow">🎓 LEARNING CENTER</span>
+        <h2>Turn courses and work into skills</h2>
+
         <form id="learningForm" class="form-grid two">
-          <input id="learnTopic" required maxlength="120" placeholder="Course / topic" />
-          <input id="learnSource" maxlength="120" placeholder="Video, course, mentor..." />
-          <textarea id="learnNote" required maxlength="500" rows="4" placeholder="What did you learn?"></textarea>
-          <textarea id="learnQuestion" maxlength="500" rows="4" placeholder="What still confuses you?"></textarea>
-          <button class="primary wide">🎓 Save Learning +15 XP</button>
+          <input
+            id="learnTopic"
+            required
+            maxlength="120"
+            placeholder="Course / topic"
+          />
+
+          <input
+            id="learnSource"
+            maxlength="120"
+            placeholder="Video, course, mentor..."
+          />
+
+          <textarea
+            id="learnNote"
+            required
+            maxlength="500"
+            rows="4"
+            placeholder="What did you learn?"
+          ></textarea>
+
+          <textarea
+            id="learnQuestion"
+            maxlength="500"
+            rows="4"
+            placeholder="What still confuses you?"
+          ></textarea>
+
+          <button class="primary wide">
+            🎓 Save Learning +15 XP
+          </button>
         </form>
       </article>
+
       <div id="learningList" class="stack"></div>
     </section>
 
     <section id="review" class="panel">
       <div class="two-col">
+
         <article class="card">
-          <span class="eyebrow">🏆 PERFORMANCE</span><h2>Your dispatcher scoreboard</h2>
+          <span class="eyebrow">🏆 PERFORMANCE</span>
+          <h2>Your dispatcher scoreboard</h2>
+
           <div class="score-list">
-            <div><span>⭐ XP</span><b id="reviewXp">0</b></div>
-            <div><span>📦 Loads booked</span><b id="reviewLoads">0</b></div>
-            <div><span>💰 Gross recorded</span><b id="reviewGross">$0</b></div>
-            <div><span>📈 Average RPM</span><b id="reviewRpm">$0.00</b></div>
-            <div><span>🧠 Cases documented</span><b id="reviewCases">0</b></div>
-            <div><span>🎓 Learning entries</span><b id="reviewLearning">0</b></div>
-            <div><span>✅ Issues solved</span><b id="reviewSolved">0</b></div>
+            <div>
+              <span>⭐ XP</span>
+              <b id="reviewXp">0</b>
+            </div>
+
+            <div>
+              <span>📦 Loads booked</span>
+              <b id="reviewLoads">0</b>
+            </div>
+
+            <div>
+              <span>💰 Gross recorded</span>
+              <b id="reviewGross">$0</b>
+            </div>
+
+            <div>
+              <span>📈 Average RPM</span>
+              <b id="reviewRpm">$0.00</b>
+            </div>
+
+            <div>
+              <span>🧠 Cases documented</span>
+              <b id="reviewCases">0</b>
+            </div>
+
+            <div>
+              <span>🎓 Learning entries</span>
+              <b id="reviewLearning">0</b>
+            </div>
+
+            <div>
+              <span>✅ Issues solved</span>
+              <b id="reviewSolved">0</b>
+            </div>
           </div>
         </article>
 
         <article class="card">
-          <span class="eyebrow">📝 END-OF-DAY JOURNAL</span><h2>Document how you worked</h2>
-          <label>🏅 Biggest win<input id="dayWin" maxlength="180" /></label>
-          <label>⚠️ Biggest mistake / challenge<textarea id="dayMistake" maxlength="300" rows="3"></textarea></label>
-          <label>🚀 Tomorrow's improvement<textarea id="dayImprove" maxlength="300" rows="3"></textarea></label>
-          <button id="finishBtn" class="primary wide">🏁 Finish Day & Grade Me</button>
-          <div id="gradeBox" class="notice">Your grade will appear here.</div>
+          <span class="eyebrow">📝 END-OF-DAY JOURNAL</span>
+          <h2>Document how you worked</h2>
+
+          <label>
+            🏅 Biggest win
+            <input id="dayWin" maxlength="180" />
+          </label>
+
+          <label>
+            ⚠️ Biggest mistake / challenge
+            <textarea
+              id="dayMistake"
+              maxlength="300"
+              rows="3"
+            ></textarea>
+          </label>
+
+          <label>
+            🚀 Tomorrow's improvement
+            <textarea
+              id="dayImprove"
+              maxlength="300"
+              rows="3"
+            ></textarea>
+          </label>
+
+          <button id="finishBtn" class="primary wide">
+            🏁 Finish Day & Grade Me
+          </button>
+
+          <div id="gradeBox" class="notice">
+            Your grade will appear here.
+          </div>
         </article>
+
       </div>
     </section>
+
   </main>
 
-  <footer>Built for focused truck dispatch operations 🚛</footer>
+  <footer>
+    Built for focused truck dispatch operations 🚛
+  </footer>
+
+  <!-- Supabase JavaScript library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Your Supabase Project URL and Publishable Key -->
+  <script src="supabase-config.js"></script>
+
+  <!-- Main DispatchOS code -->
   <script src="app.js"></script>
 </body>
 </html>
