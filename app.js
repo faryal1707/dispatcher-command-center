@@ -1,30 +1,2164 @@
-const STORAGE_KEY='dispatcherCommandCenter.v1';
-const emptyState={xp:0,streak:1,shift:false,missions:[],trucks:[],loads:[],issues:[],cases:[],learning:[],journal:[]};
-let state=loadState();
-const $=id=>document.getElementById(id);
-const money=n=>'$'+Number(n||0).toLocaleString(undefined,{maximumFractionDigits:0});
-function loadState(){try{return {...emptyState,...JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}}catch{return {...emptyState}}}
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));updateStats()}
-function addXP(n){state.xp=Math.max(0,state.xp+n);save()}
-function setTab(id){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active-panel',p.id===id))}
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
-$('shiftBtn').addEventListener('click',()=>{state.shift=!state.shift;save();renderShift()});
-function renderShift(){$('shiftBtn').textContent=state.shift?'🔴 End Shift':'🟢 Start Shift';$('shiftState').textContent=state.shift?'🟢 Live Shift':'⚪ Off Shift'}
-function updateStats(){const activeLoads=state.loads.filter(l=>l.status!=='Delivered').length,gross=state.loads.reduce((a,l)=>a+l.rate,0),openIssues=state.issues.filter(i=>!i.solved).length,totalMiles=state.loads.reduce((a,l)=>a+l.miles,0);$('xpTop').textContent=state.xp;$('streak').textContent=state.streak;$('statTrucks').textContent=state.trucks.length;$('statLoads').textContent=activeLoads;$('statGross').textContent=money(gross);$('statIssues').textContent=openIssues;$('missionDone').textContent=state.missions.filter(m=>m.done).length;$('missionTotal').textContent=state.missions.length;$('reviewXp').textContent=state.xp;$('reviewLoads').textContent=state.loads.length;$('reviewGross').textContent=money(gross);$('reviewRpm').textContent=totalMiles?'$'+(gross/totalMiles).toFixed(2):'$0.00';$('reviewCases').textContent=state.cases.length;$('reviewLearning').textContent=state.learning.length;$('reviewSolved').textContent=state.issues.filter(i=>i.solved).length;renderAttention()}
-function empty(box,text){box.innerHTML=`<div class="item meta">${text}</div>`}
-function renderMissions(){const box=$('missionList');box.innerHTML='';if(!state.missions.length)return empty(box,'No missions yet. Add 3–6 important goals for today.');state.missions.forEach((m,i)=>{const el=document.createElement('div');el.className='item item-row';el.innerHTML=`<label style="display:flex;align-items:center;gap:10px;margin:0;flex:1;color:inherit"><input type="checkbox" style="width:auto" ${m.done?'checked':''}><span ${m.done?'style="text-decoration:line-through;opacity:.6"':''}>${escapeHtml(m.text)}</span></label><button class="small-btn">🗑️</button>`;el.querySelector('input').addEventListener('change',e=>{m.done=e.target.checked;addXP(e.target.checked?10:-10);renderMissions()});el.querySelector('button').addEventListener('click',()=>{if(m.done)state.xp=Math.max(0,state.xp-10);state.missions.splice(i,1);save();renderMissions()});box.appendChild(el)})}
-$('missionForm').addEventListener('submit',e=>{e.preventDefault();const text=$('missionText').value.trim();if(!text)return;state.missions.push({text,done:false});$('missionText').value='';save();renderMissions()});
-function renderTrucks(){const box=$('truckList');box.innerHTML='';if(!state.trucks.length)return empty(box,'🚚 No trucks added yet.');state.trucks.forEach((t,i)=>{const el=document.createElement('article');el.className='card';el.innerHTML=`<div class="item-row"><div><b>🚛 Truck ${escapeHtml(t.no)}</b><div class="meta">${escapeHtml(t.driver)} · ${escapeHtml(t.equipment)}</div><div class="meta">📍 ${escapeHtml(t.loc||'Location not set')}</div></div><button class="small-btn">Remove</button></div>`;el.querySelector('button').addEventListener('click',()=>{state.trucks.splice(i,1);save();renderTrucks()});box.appendChild(el)})}
-$('truckForm').addEventListener('submit',e=>{e.preventDefault();state.trucks.push({no:$('truckNo').value.trim(),driver:$('driverName').value.trim(),equipment:$('equipment').value,loc:$('truckLoc').value.trim()});e.target.reset();addXP(5);renderTrucks()});
-function renderLoads(){const box=$('loadList');box.innerHTML='';if(!state.loads.length)return empty(box,'📦 No loads recorded yet.');state.loads.forEach((l,i)=>{const el=document.createElement('div');el.className='item';el.innerHTML=`<div class="item-row"><div><b>📦 Truck ${escapeHtml(l.truck)} · ${escapeHtml(l.origin)} → ${escapeHtml(l.destination)}</b><div class="meta">${escapeHtml(l.broker)} · ${escapeHtml(l.source)} · ${money(l.rate)}${l.miles?' · '+l.miles+' mi · $'+(l.rate/l.miles).toFixed(2)+'/mi':''}</div></div><select class="status" style="width:auto"><option>Booked</option><option>At Pickup</option><option>In Transit</option><option>At Delivery</option><option>Delivered</option></select></div><div style="margin-top:10px"><button class="small-btn remove">Remove</button></div>`;const sel=el.querySelector('.status');sel.value=l.status;sel.addEventListener('change',()=>{if(sel.value==='Delivered'&&l.status!=='Delivered')state.xp+=20;l.status=sel.value;save();renderLoads()});el.querySelector('.remove').addEventListener('click',()=>{state.loads.splice(i,1);save();renderLoads()});box.appendChild(el)})}
-$('loadForm').addEventListener('submit',e=>{e.preventDefault();state.loads.push({truck:$('loadTruck').value.trim(),broker:$('loadBroker').value.trim(),rate:Number($('loadRate').value||0),origin:$('origin').value.trim(),destination:$('destination').value.trim(),miles:Number($('miles').value||0),status:$('loadStatus').value,source:$('source').value});e.target.reset();addXP(10);renderLoads()});
-function renderIssues(){const box=$('issueList');box.innerHTML='';if(!state.issues.length)return empty(box,'✅ No issues recorded.');state.issues.forEach((x,i)=>{const el=document.createElement('div');el.className='item';el.innerHTML=`<div class="item-row"><div><b>${x.solved?'✅':'🚨'} ${escapeHtml(x.title)}</b><div class="meta">${escapeHtml(x.type)} · ${escapeHtml(x.priority)}</div><div class="meta">${escapeHtml(x.details||'No details')}</div></div><div><button class="small-btn toggle">${x.solved?'↩️ Reopen':'✅ Resolve'}</button> <button class="small-btn remove">Remove</button></div></div>`;el.querySelector('.toggle').addEventListener('click',()=>{x.solved=!x.solved;state.xp=Math.max(0,state.xp+(x.solved?20:-20));save();renderIssues()});el.querySelector('.remove').addEventListener('click',()=>{state.issues.splice(i,1);save();renderIssues()});box.appendChild(el)})}
-$('issueForm').addEventListener('submit',e=>{e.preventDefault();state.issues.push({title:$('issueTitle').value.trim(),type:$('issueType').value,priority:$('issuePriority').value,details:$('issueDetails').value.trim(),solved:false});e.target.reset();save();renderIssues()});
-function renderCases(filter=''){const box=$('caseList'),q=filter.toLowerCase();box.innerHTML='';const list=state.cases.filter(c=>`${c.problem} ${c.category} ${c.solution} ${c.lesson}`.toLowerCase().includes(q));if(!list.length)return empty(box,'🧠 No matching cases yet.');list.forEach(c=>{const el=document.createElement('div');el.className='item';el.innerHTML=`<b>🧩 ${escapeHtml(c.problem)}</b><div class="meta">${escapeHtml(c.category||'General')}</div><p><b>✅ Solution:</b> ${escapeHtml(c.solution)}</p><p><b>💡 Next time:</b> ${escapeHtml(c.lesson||'No prevention note')}</p>`;box.appendChild(el)})}
-$('caseForm').addEventListener('submit',e=>{e.preventDefault();state.cases.unshift({problem:$('caseProblem').value.trim(),category:$('caseCategory').value.trim(),solution:$('caseSolution').value.trim(),lesson:$('caseLesson').value.trim()});e.target.reset();addXP(25);renderCases($('caseSearch').value)});$('caseSearch').addEventListener('input',e=>renderCases(e.target.value));
-function renderLearning(){const box=$('learningList');box.innerHTML='';if(!state.learning.length)return empty(box,'🎓 No learning entries yet.');state.learning.forEach(l=>{const el=document.createElement('div');el.className='item';el.innerHTML=`<b>🎓 ${escapeHtml(l.topic)}</b><div class="meta">${escapeHtml(l.source||'Personal learning')}</div><p>📘 ${escapeHtml(l.note)}</p><p>${l.question?'❓ '+escapeHtml(l.question):'✅ No open question recorded.'}</p>`;box.appendChild(el)})}
-$('learningForm').addEventListener('submit',e=>{e.preventDefault();state.learning.unshift({topic:$('learnTopic').value.trim(),source:$('learnSource').value.trim(),note:$('learnNote').value.trim(),question:$('learnQuestion').value.trim()});e.target.reset();addXP(15);renderLearning()});
-function renderAttention(){const box=$('attentionBoard');box.innerHTML='';const open=state.issues.filter(i=>!i.solved).length;const activeLoads=state.loads.filter(l=>l.status!=='Delivered').length;const trucksToCover=Math.max(0,state.trucks.length-activeLoads);[['🚨 Open Problems',open,'Resolve critical issues first.'],['🚚 Trucks To Cover',trucksToCover,'Keep equipment moving.'],['🎓 Knowledge Entries',state.cases.length+state.learning.length,'Build your personal playbook.']].forEach(([title,noteCount,text])=>{const el=document.createElement('div');el.className='item';el.innerHTML=`<b>${title}: ${noteCount}</b><div class="meta">${text}</div>`;box.appendChild(el)})}
-$('finishBtn').addEventListener('click',()=>{const total=state.missions.length,done=state.missions.filter(m=>m.done).length;const missionRate=total?done/total:0;let score=Math.round(45*missionRate+20*Math.min(1,state.loads.length/3)+15*Math.min(1,state.issues.filter(i=>i.solved).length/2)+20*Math.min(1,(state.cases.length+state.learning.length)/2));const grade=score>=90?'S':score>=80?'A':score>=70?'B':score>=60?'C':score>=45?'D':'F';state.journal.unshift({date:new Date().toISOString(),win:$('dayWin').value.trim(),mistake:$('dayMistake').value.trim(),improve:$('dayImprove').value.trim(),score,grade});state.xp+=grade==='S'?40:grade==='A'?30:grade==='B'?20:10;save();$('gradeBox').textContent=`🏆 Daily Grade: ${grade} · ${score}/100. Missions ${done}/${total}. ${grade==='S'||grade==='A'?'Excellent operational discipline.':grade==='B'?'Solid day. Keep improving documentation and completion rate.':'Review unfinished work and set one clear improvement for tomorrow.'}`});
-function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-renderShift();renderMissions();renderTrucks();renderLoads();renderIssues();renderCases();renderLearning();updateStats();
+// ============================================================
+// 🚛 DISPATCHER COMMAND CENTER
+// Local Storage + Supabase Login + Cloud Sync
+// ============================================================
+
+const STORAGE_KEY = 'dispatcherCommandCenter.v2';
+
+const emptyState = {
+  xp: 0,
+  streak: 1,
+  shift: false,
+  missions: [],
+  trucks: [],
+  loads: [],
+  issues: [],
+  cases: [],
+  learning: [],
+  journal: []
+};
+
+let state = loadLocalState();
+let currentUser = null;
+let supabaseClient = null;
+let cloudEnabled = false;
+let isLoadingCloud = false;
+
+const $ = id => document.getElementById(id);
+
+const money = n =>
+  '$' + Number(n || 0).toLocaleString(undefined, {
+    maximumFractionDigits: 0
+  });
+
+
+// ============================================================
+// ☁️ SUPABASE SETUP
+// ============================================================
+
+function setupSupabase() {
+  const url = window.DISPATCHOS_SUPABASE_URL;
+  const key = window.DISPATCHOS_SUPABASE_ANON_KEY;
+
+  if (
+    !url ||
+    !key ||
+    url.includes('PASTE_') ||
+    key.includes('PASTE_')
+  ) {
+    console.log('DispatchOS running in Local Mode.');
+    createAccountBar();
+    updateAccountBar();
+    return;
+  }
+
+  if (!window.supabase) {
+    console.error('Supabase library did not load.');
+    createAccountBar();
+    updateAccountBar();
+    return;
+  }
+
+  try {
+    supabaseClient = window.supabase.createClient(url, key);
+    cloudEnabled = true;
+
+    console.log('DispatchOS Supabase connection initialized.');
+
+    createAccountBar();
+
+    initializeAuth();
+  } catch (error) {
+    console.error('Supabase setup failed:', error);
+    createAccountBar();
+    updateAccountBar();
+  }
+}
+
+
+// ============================================================
+// 👤 ACCOUNT / LOGIN BAR
+// ============================================================
+
+function createAccountBar() {
+  if (document.getElementById('accountBar')) return;
+
+  const bar = document.createElement('section');
+
+  bar.id = 'accountBar';
+
+  bar.style.cssText = `
+    max-width: 1200px;
+    margin: 16px auto 0;
+    padding: 0 20px;
+  `;
+
+  bar.innerHTML = `
+    <div
+      style="
+        display:flex;
+        flex-wrap:wrap;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:12px 16px;
+        border-radius:14px;
+        border:1px solid rgba(148,163,184,.25);
+        background:rgba(15,23,42,.55);
+        backdrop-filter:blur(12px);
+      "
+    >
+
+      <div>
+        <div style="font-weight:700">
+          ☁️ DispatchOS Cloud
+        </div>
+
+        <div
+          id="accountStatus"
+          style="
+            font-size:13px;
+            opacity:.75;
+            margin-top:3px;
+          "
+        >
+          Checking connection...
+        </div>
+      </div>
+
+      <div
+        id="accountActions"
+        style="
+          display:flex;
+          flex-wrap:wrap;
+          gap:8px;
+        "
+      ></div>
+
+    </div>
+  `;
+
+  document.body.insertBefore(bar, document.body.firstChild);
+}
+
+
+function updateAccountBar(message = '') {
+  const status = $('accountStatus');
+  const actions = $('accountActions');
+
+  if (!status || !actions) return;
+
+  actions.innerHTML = '';
+
+  if (!cloudEnabled) {
+    status.textContent =
+      '💻 Local Mode — data is saved only on this browser.';
+
+    return;
+  }
+
+  if (currentUser) {
+    status.textContent =
+      message ||
+      `🟢 Cloud connected as ${currentUser.email}`;
+
+    const syncButton = document.createElement('button');
+
+    syncButton.textContent = '🔄 Sync Now';
+    syncButton.className = 'primary';
+
+    syncButton.addEventListener('click', async () => {
+      syncButton.disabled = true;
+      syncButton.textContent = '⏳ Syncing...';
+
+      await syncToCloud();
+
+      syncButton.disabled = false;
+      syncButton.textContent = '✅ Synced';
+
+      setTimeout(() => {
+        syncButton.textContent = '🔄 Sync Now';
+      }, 1500);
+    });
+
+    const logoutButton = document.createElement('button');
+
+    logoutButton.textContent = '🚪 Sign Out';
+    logoutButton.className = 'small-btn';
+
+    logoutButton.addEventListener('click', signOut);
+
+    actions.append(syncButton, logoutButton);
+
+  } else {
+
+    status.textContent =
+      message ||
+      '🔐 Sign in to synchronize your dispatcher office across devices.';
+
+    const loginButton = document.createElement('button');
+
+    loginButton.textContent = '🔐 Login';
+    loginButton.className = 'primary';
+
+    loginButton.addEventListener('click', showAuthModal);
+
+    actions.append(loginButton);
+  }
+}
+
+
+// ============================================================
+// 🔐 LOGIN / SIGN-UP WINDOW
+// ============================================================
+
+function showAuthModal() {
+  let modal = document.getElementById('dispatchAuthModal');
+
+  if (modal) {
+    modal.style.display = 'flex';
+    return;
+  }
+
+  modal = document.createElement('div');
+
+  modal.id = 'dispatchAuthModal';
+
+  modal.style.cssText = `
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(2,6,23,.8);
+    backdrop-filter:blur(8px);
+  `;
+
+  modal.innerHTML = `
+
+    <div
+      style="
+        width:100%;
+        max-width:430px;
+        border-radius:20px;
+        padding:24px;
+        background:#111827;
+        border:1px solid rgba(148,163,184,.3);
+        box-shadow:0 25px 70px rgba(0,0,0,.45);
+        color:white;
+      "
+    >
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:20px;
+        "
+      >
+
+        <div>
+          <div style="font-size:13px;opacity:.65">
+            🚛 DISPATCH OPERATIONS TRACKER
+          </div>
+
+          <h2 style="margin:5px 0 0">
+            DispatchOS Login
+          </h2>
+        </div>
+
+        <button
+          id="closeAuth"
+          type="button"
+          style="
+            border:none;
+            background:transparent;
+            color:white;
+            font-size:22px;
+            cursor:pointer;
+          "
+        >
+          ✕
+        </button>
+
+      </div>
+
+
+      <label style="display:block;margin-top:22px">
+        Email
+
+        <input
+          id="authEmail"
+          type="email"
+          autocomplete="email"
+          placeholder="you@example.com"
+          style="
+            width:100%;
+            margin-top:7px;
+            padding:12px;
+            border-radius:10px;
+            border:1px solid #475569;
+            background:#0f172a;
+            color:white;
+            box-sizing:border-box;
+          "
+        />
+      </label>
+
+
+      <label style="display:block;margin-top:14px">
+        Password
+
+        <input
+          id="authPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Minimum 6 characters"
+          style="
+            width:100%;
+            margin-top:7px;
+            padding:12px;
+            border-radius:10px;
+            border:1px solid #475569;
+            background:#0f172a;
+            color:white;
+            box-sizing:border-box;
+          "
+        />
+      </label>
+
+
+      <div
+        id="authMessage"
+        style="
+          margin-top:14px;
+          min-height:20px;
+          font-size:13px;
+          color:#fbbf24;
+        "
+      ></div>
+
+
+      <button
+        id="loginAccount"
+        type="button"
+        class="primary"
+        style="
+          width:100%;
+          margin-top:10px;
+          padding:12px;
+        "
+      >
+        🔐 Login
+      </button>
+
+
+      <button
+        id="createAccount"
+        type="button"
+        class="small-btn"
+        style="
+          width:100%;
+          margin-top:10px;
+          padding:12px;
+        "
+      >
+        ✨ Create Account
+      </button>
+
+
+      <p
+        style="
+          font-size:12px;
+          opacity:.6;
+          margin-top:16px;
+          line-height:1.5;
+        "
+      >
+        Your trucks, loads, issues, cases, learning notes and
+        performance data will be associated with your account.
+      </p>
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  $('closeAuth').addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+
+  $('loginAccount').addEventListener('click', login);
+
+  $('createAccount').addEventListener('click', createAccount);
+}
+
+
+// ============================================================
+// ✨ CREATE ACCOUNT
+// ============================================================
+
+async function createAccount() {
+  if (!supabaseClient) return;
+
+  const email = $('authEmail').value.trim();
+  const password = $('authPassword').value;
+
+  const message = $('authMessage');
+
+  if (!email || !password) {
+    message.textContent =
+      '⚠️ Enter your email and password.';
+    return;
+  }
+
+  if (password.length < 6) {
+    message.textContent =
+      '⚠️ Password must contain at least 6 characters.';
+    return;
+  }
+
+  message.textContent =
+    '⏳ Creating your DispatchOS account...';
+
+  const { data, error } =
+    await supabaseClient.auth.signUp({
+      email,
+      password
+    });
+
+  if (error) {
+    message.textContent =
+      '❌ ' + error.message;
+    return;
+  }
+
+  if (data.session) {
+
+    currentUser = data.user;
+
+    message.textContent =
+      '✅ Account created successfully.';
+
+    await createCloudProfileIfNeeded();
+
+    setTimeout(() => {
+      $('dispatchAuthModal').style.display = 'none';
+    }, 800);
+
+  } else {
+
+    message.textContent =
+      '📧 Account created. Check your email for the confirmation link.';
+  }
+}
+
+
+// ============================================================
+// 🔐 LOGIN
+// ============================================================
+
+async function login() {
+  if (!supabaseClient) return;
+
+  const email = $('authEmail').value.trim();
+  const password = $('authPassword').value;
+
+  const message = $('authMessage');
+
+  if (!email || !password) {
+    message.textContent =
+      '⚠️ Enter your email and password.';
+    return;
+  }
+
+  message.textContent = '⏳ Logging in...';
+
+  const { data, error } =
+    await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+  if (error) {
+    message.textContent =
+      '❌ ' + error.message;
+    return;
+  }
+
+  currentUser = data.user;
+
+  message.textContent =
+    '✅ Login successful. Loading your office...';
+
+  await loadCloudState();
+
+  updateAccountBar();
+
+  setTimeout(() => {
+    $('dispatchAuthModal').style.display = 'none';
+  }, 600);
+}
+
+
+// ============================================================
+// 🚪 SIGN OUT
+// ============================================================
+
+async function signOut() {
+  if (!supabaseClient) return;
+
+  await syncToCloud();
+
+  await supabaseClient.auth.signOut();
+
+  currentUser = null;
+
+  state = {
+    ...emptyState
+  };
+
+  saveLocalOnly();
+
+  renderAll();
+
+  updateAccountBar(
+    '🔐 Signed out. Login again to access your cloud office.'
+  );
+}
+
+
+// ============================================================
+// 🔎 INITIAL AUTH CHECK
+// ============================================================
+
+async function initializeAuth() {
+  const {
+    data: { session }
+  } = await supabaseClient.auth.getSession();
+
+  if (session?.user) {
+
+    currentUser = session.user;
+
+    updateAccountBar(
+      '⏳ Loading your cloud office...'
+    );
+
+    await loadCloudState();
+
+  } else {
+
+    currentUser = null;
+
+    updateAccountBar();
+  }
+
+
+  supabaseClient.auth.onAuthStateChange(
+    async (event, session) => {
+
+      if (event === 'SIGNED_IN' && session?.user) {
+
+        currentUser = session.user;
+
+        await loadCloudState();
+
+        updateAccountBar();
+
+      }
+
+      if (event === 'SIGNED_OUT') {
+
+        currentUser = null;
+
+        updateAccountBar();
+      }
+    }
+  );
+}
+
+
+// ============================================================
+// 💾 LOCAL STORAGE
+// ============================================================
+
+function loadLocalState() {
+  try {
+
+    return {
+      ...emptyState,
+      ...JSON.parse(
+        localStorage.getItem(STORAGE_KEY) || '{}'
+      )
+    };
+
+  } catch {
+
+    return {
+      ...emptyState
+    };
+  }
+}
+
+
+function saveLocalOnly() {
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(state)
+  );
+}
+
+
+// ============================================================
+// ☁️ CLOUD DATABASE
+// ============================================================
+
+async function createCloudProfileIfNeeded() {
+  if (!currentUser || !supabaseClient) return;
+
+  const { data, error } =
+    await supabaseClient
+      .from('dispatcher_profiles')
+      .select('state')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+
+  if (error) {
+    console.error(
+      'Could not check cloud profile:',
+      error
+    );
+
+    return;
+  }
+
+  if (!data) {
+
+    const { error: insertError } =
+      await supabaseClient
+        .from('dispatcher_profiles')
+        .insert({
+          user_id: currentUser.id,
+          state: state
+        });
+
+    if (insertError) {
+      console.error(
+        'Could not create cloud profile:',
+        insertError
+      );
+    }
+  }
+}
+
+
+async function loadCloudState() {
+  if (
+    !currentUser ||
+    !supabaseClient ||
+    isLoadingCloud
+  ) return;
+
+  isLoadingCloud = true;
+
+  try {
+
+    const { data, error } =
+      await supabaseClient
+        .from('dispatcher_profiles')
+        .select('state')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+
+    if (error) {
+      console.error(
+        'Cloud loading error:',
+        error
+      );
+
+      updateAccountBar(
+        '⚠️ Cloud connection error. Local data remains available.'
+      );
+
+      return;
+    }
+
+
+    if (data?.state) {
+
+      state = {
+        ...emptyState,
+        ...data.state
+      };
+
+      saveLocalOnly();
+
+      renderAll();
+
+      updateAccountBar(
+        `🟢 Cloud synced as ${currentUser.email}`
+      );
+
+    } else {
+
+      await createCloudProfileIfNeeded();
+
+      await syncToCloud();
+
+      updateAccountBar(
+        `🟢 New cloud office created for ${currentUser.email}`
+      );
+    }
+
+  } finally {
+
+    isLoadingCloud = false;
+  }
+}
+
+
+async function syncToCloud() {
+  if (
+    !cloudEnabled ||
+    !currentUser ||
+    !supabaseClient
+  ) {
+    return;
+  }
+
+  const { error } =
+    await supabaseClient
+      .from('dispatcher_profiles')
+      .upsert(
+        {
+          user_id: currentUser.id,
+          state: state,
+          updated_at: new Date().toISOString()
+        },
+        {
+          onConflict: 'user_id'
+        }
+      );
+
+
+  if (error) {
+
+    console.error(
+      'Cloud synchronization failed:',
+      error
+    );
+
+    updateAccountBar(
+      '⚠️ Cloud sync failed. Your data is still saved locally.'
+    );
+
+  } else {
+
+    updateAccountBar(
+      `🟢 Synced as ${currentUser.email}`
+    );
+  }
+}
+
+
+// ============================================================
+// 💾 UNIVERSAL SAVE
+// ============================================================
+
+function save() {
+  saveLocalOnly();
+
+  updateStats();
+
+  if (currentUser) {
+    syncToCloud();
+  }
+}
+
+
+function addXP(n) {
+  state.xp = Math.max(
+    0,
+    state.xp + n
+  );
+
+  save();
+}
+
+
+// ============================================================
+// 🗂️ TABS
+// ============================================================
+
+function setTab(id) {
+  document
+    .querySelectorAll('.tab')
+    .forEach(button => {
+
+      button.classList.toggle(
+        'active',
+        button.dataset.tab === id
+      );
+
+    });
+
+  document
+    .querySelectorAll('.panel')
+    .forEach(panel => {
+
+      panel.classList.toggle(
+        'active-panel',
+        panel.id === id
+      );
+
+    });
+}
+
+
+document
+  .querySelectorAll('.tab')
+  .forEach(button => {
+
+    button.addEventListener(
+      'click',
+      () => setTab(button.dataset.tab)
+    );
+
+  });
+
+
+// ============================================================
+// 🟢 SHIFT
+// ============================================================
+
+$('shiftBtn').addEventListener(
+  'click',
+  () => {
+
+    state.shift = !state.shift;
+
+    save();
+
+    renderShift();
+  }
+);
+
+
+function renderShift() {
+
+  $('shiftBtn').textContent =
+    state.shift
+      ? '🔴 End Shift'
+      : '🟢 Start Shift';
+
+  $('shiftState').textContent =
+    state.shift
+      ? '🟢 Live Shift'
+      : '⚪ Off Shift';
+}
+
+
+// ============================================================
+// 📊 STATISTICS
+// ============================================================
+
+function updateStats() {
+
+  const activeLoads =
+    state.loads.filter(
+      load => load.status !== 'Delivered'
+    ).length;
+
+
+  const gross =
+    state.loads.reduce(
+      (total, load) =>
+        total + Number(load.rate || 0),
+      0
+    );
+
+
+  const openIssues =
+    state.issues.filter(
+      issue => !issue.solved
+    ).length;
+
+
+  const totalMiles =
+    state.loads.reduce(
+      (total, load) =>
+        total + Number(load.miles || 0),
+      0
+    );
+
+
+  $('xpTop').textContent =
+    state.xp;
+
+
+  $('streak').textContent =
+    state.streak;
+
+
+  $('statTrucks').textContent =
+    state.trucks.length;
+
+
+  $('statLoads').textContent =
+    activeLoads;
+
+
+  $('statGross').textContent =
+    money(gross);
+
+
+  $('statIssues').textContent =
+    openIssues;
+
+
+  $('missionDone').textContent =
+    state.missions.filter(
+      mission => mission.done
+    ).length;
+
+
+  $('missionTotal').textContent =
+    state.missions.length;
+
+
+  $('reviewXp').textContent =
+    state.xp;
+
+
+  $('reviewLoads').textContent =
+    state.loads.length;
+
+
+  $('reviewGross').textContent =
+    money(gross);
+
+
+  $('reviewRpm').textContent =
+    totalMiles
+      ? '$' + (gross / totalMiles).toFixed(2)
+      : '$0.00';
+
+
+  $('reviewCases').textContent =
+    state.cases.length;
+
+
+  $('reviewLearning').textContent =
+    state.learning.length;
+
+
+  $('reviewSolved').textContent =
+    state.issues.filter(
+      issue => issue.solved
+    ).length;
+
+
+  renderAttention();
+}
+
+
+// ============================================================
+// EMPTY MESSAGE
+// ============================================================
+
+function empty(box, text) {
+  box.innerHTML =
+    `<div class="item meta">${text}</div>`;
+}
+
+
+// ============================================================
+// 🎯 DAILY MISSIONS
+// ============================================================
+
+function renderMissions() {
+
+  const box = $('missionList');
+
+  box.innerHTML = '';
+
+
+  if (!state.missions.length) {
+
+    empty(
+      box,
+      'No missions yet. Add 3–6 important goals for today.'
+    );
+
+    return;
+  }
+
+
+  state.missions.forEach(
+    (mission, index) => {
+
+      const element =
+        document.createElement('div');
+
+      element.className =
+        'item item-row';
+
+
+      element.innerHTML = `
+        <label
+          style="
+            display:flex;
+            align-items:center;
+            gap:10px;
+            margin:0;
+            flex:1;
+            color:inherit;
+          "
+        >
+
+          <input
+            type="checkbox"
+            style="width:auto"
+            ${mission.done ? 'checked' : ''}
+          >
+
+          <span
+            ${
+              mission.done
+                ? 'style="text-decoration:line-through;opacity:.6"'
+                : ''
+            }
+          >
+            ${escapeHtml(mission.text)}
+          </span>
+
+        </label>
+
+        <button class="small-btn">
+          🗑️
+        </button>
+      `;
+
+
+      element
+        .querySelector('input')
+        .addEventListener(
+          'change',
+          event => {
+
+            mission.done =
+              event.target.checked;
+
+
+            addXP(
+              event.target.checked
+                ? 10
+                : -10
+            );
+
+
+            renderMissions();
+          }
+        );
+
+
+      element
+        .querySelector('button')
+        .addEventListener(
+          'click',
+          () => {
+
+            if (mission.done) {
+              state.xp =
+                Math.max(
+                  0,
+                  state.xp - 10
+                );
+            }
+
+
+            state.missions.splice(
+              index,
+              1
+            );
+
+
+            save();
+
+            renderMissions();
+          }
+        );
+
+
+      box.appendChild(element);
+    }
+  );
+}
+
+
+$('missionForm').addEventListener(
+  'submit',
+  event => {
+
+    event.preventDefault();
+
+    const text =
+      $('missionText').value.trim();
+
+    if (!text) return;
+
+
+    state.missions.push({
+      text,
+      done: false
+    });
+
+
+    $('missionText').value = '';
+
+    save();
+
+    renderMissions();
+  }
+);
+
+
+// ============================================================
+// 🚚 FLEET
+// ============================================================
+
+function renderTrucks() {
+
+  const box =
+    $('truckList');
+
+  box.innerHTML = '';
+
+
+  if (!state.trucks.length) {
+
+    empty(
+      box,
+      '🚚 No trucks added yet.'
+    );
+
+    return;
+  }
+
+
+  state.trucks.forEach(
+    (truck, index) => {
+
+      const element =
+        document.createElement('article');
+
+      element.className = 'card';
+
+
+      element.innerHTML = `
+
+        <div class="item-row">
+
+          <div>
+
+            <b>
+              🚛 Truck ${escapeHtml(truck.no)}
+            </b>
+
+            <div class="meta">
+              ${escapeHtml(truck.driver)}
+              ·
+              ${escapeHtml(truck.equipment)}
+            </div>
+
+            <div class="meta">
+              📍
+              ${escapeHtml(
+                truck.loc ||
+                'Location not set'
+              )}
+            </div>
+
+          </div>
+
+          <button class="small-btn">
+            Remove
+          </button>
+
+        </div>
+      `;
+
+
+      element
+        .querySelector('button')
+        .addEventListener(
+          'click',
+          () => {
+
+            state.trucks.splice(
+              index,
+              1
+            );
+
+            save();
+
+            renderTrucks();
+          }
+        );
+
+
+      box.appendChild(element);
+    }
+  );
+}
+
+
+$('truckForm').addEventListener(
+  'submit',
+  event => {
+
+    event.preventDefault();
+
+
+    state.trucks.push({
+
+      no:
+        $('truckNo').value.trim(),
+
+      driver:
+        $('driverName').value.trim(),
+
+      equipment:
+        $('equipment').value,
+
+      loc:
+        $('truckLoc').value.trim()
+
+    });
+
+
+    event.target.reset();
+
+    addXP(5);
+
+    renderTrucks();
+  }
+);
+
+
+// ============================================================
+// 📦 LOADS
+// ============================================================
+
+function renderLoads() {
+
+  const box =
+    $('loadList');
+
+  box.innerHTML = '';
+
+
+  if (!state.loads.length) {
+
+    empty(
+      box,
+      '📦 No loads recorded yet.'
+    );
+
+    return;
+  }
+
+
+  state.loads.forEach(
+    (load, index) => {
+
+      const element =
+        document.createElement('div');
+
+      element.className =
+        'item';
+
+
+      element.innerHTML = `
+
+        <div class="item-row">
+
+          <div>
+
+            <b>
+              📦 Truck ${escapeHtml(load.truck)}
+              ·
+              ${escapeHtml(load.origin)}
+              →
+              ${escapeHtml(load.destination)}
+            </b>
+
+            <div class="meta">
+
+              ${escapeHtml(load.broker)}
+              ·
+              ${escapeHtml(load.source)}
+              ·
+              ${money(load.rate)}
+
+              ${
+                load.miles
+                  ? ` · ${load.miles} mi · $${(
+                      load.rate / load.miles
+                    ).toFixed(2)}/mi`
+                  : ''
+              }
+
+            </div>
+
+          </div>
+
+
+          <select
+            class="status"
+            style="width:auto"
+          >
+
+            <option>Booked</option>
+
+            <option>At Pickup</option>
+
+            <option>In Transit</option>
+
+            <option>At Delivery</option>
+
+            <option>Delivered</option>
+
+          </select>
+
+        </div>
+
+
+        <div style="margin-top:10px">
+
+          <button
+            class="small-btn remove"
+          >
+            Remove
+          </button>
+
+        </div>
+      `;
+
+
+      const select =
+        element.querySelector('.status');
+
+
+      select.value =
+        load.status;
+
+
+      select.addEventListener(
+        'change',
+        () => {
+
+          if (
+            select.value === 'Delivered' &&
+            load.status !== 'Delivered'
+          ) {
+            state.xp += 20;
+          }
+
+
+          load.status =
+            select.value;
+
+
+          save();
+
+          renderLoads();
+        }
+      );
+
+
+      element
+        .querySelector('.remove')
+        .addEventListener(
+          'click',
+          () => {
+
+            state.loads.splice(
+              index,
+              1
+            );
+
+            save();
+
+            renderLoads();
+          }
+        );
+
+
+      box.appendChild(element);
+    }
+  );
+}
+
+
+$('loadForm').addEventListener(
+  'submit',
+  event => {
+
+    event.preventDefault();
+
+
+    state.loads.push({
+
+      truck:
+        $('loadTruck').value.trim(),
+
+      broker:
+        $('loadBroker').value.trim(),
+
+      rate:
+        Number(
+          $('loadRate').value || 0
+        ),
+
+      origin:
+        $('origin').value.trim(),
+
+      destination:
+        $('destination').value.trim(),
+
+      miles:
+        Number(
+          $('miles').value || 0
+        ),
+
+      status:
+        $('loadStatus').value,
+
+      source:
+        $('source').value
+
+    });
+
+
+    event.target.reset();
+
+    addXP(10);
+
+    renderLoads();
+  }
+);
+
+
+// ============================================================
+// 🚨 ISSUES
+// ============================================================
+
+function renderIssues() {
+
+  const box =
+    $('issueList');
+
+  box.innerHTML = '';
+
+
+  if (!state.issues.length) {
+
+    empty(
+      box,
+      '✅ No issues recorded.'
+    );
+
+    return;
+  }
+
+
+  state.issues.forEach(
+    (issue, index) => {
+
+      const element =
+        document.createElement('div');
+
+      element.className =
+        'item';
+
+
+      element.innerHTML = `
+
+        <div class="item-row">
+
+          <div>
+
+            <b>
+
+              ${
+                issue.solved
+                  ? '✅'
+                  : '🚨'
+              }
+
+              ${escapeHtml(issue.title)}
+
+            </b>
+
+
+            <div class="meta">
+
+              ${escapeHtml(issue.type)}
+              ·
+              ${escapeHtml(issue.priority)}
+
+            </div>
+
+
+            <div class="meta">
+
+              ${escapeHtml(
+                issue.details ||
+                'No details'
+              )}
+
+            </div>
+
+          </div>
+
+
+          <div>
+
+            <button
+              class="small-btn toggle"
+            >
+
+              ${
+                issue.solved
+                  ? '↩️ Reopen'
+                  : '✅ Resolve'
+              }
+
+            </button>
+
+
+            <button
+              class="small-btn remove"
+            >
+              Remove
+            </button>
+
+          </div>
+
+        </div>
+      `;
+
+
+      element
+        .querySelector('.toggle')
+        .addEventListener(
+          'click',
+          () => {
+
+            issue.solved =
+              !issue.solved;
+
+
+            state.xp =
+              Math.max(
+                0,
+                state.xp +
+                (
+                  issue.solved
+                    ? 20
+                    : -20
+                )
+              );
+
+
+            save();
+
+            renderIssues();
+          }
+        );
+
+
+      element
+        .querySelector('.remove')
+        .addEventListener(
+          'click',
+          () => {
+
+            state.issues.splice(
+              index,
+              1
+            );
+
+            save();
+
+            renderIssues();
+          }
+        );
+
+
+      box.appendChild(element);
+    }
+  );
+}
+
+
+$('issueForm').addEventListener(
+  'submit',
+  event => {
+
+    event.preventDefault();
+
+
+    state.issues.push({
+
+      title:
+        $('issueTitle').value.trim(),
+
+      type:
+        $('issueType').value,
+
+      priority:
+        $('issuePriority').value,
+
+      details:
+        $('issueDetails').value.trim(),
+
+      solved: false
+
+    });
+
+
+    event.target.reset();
+
+    save();
+
+    renderIssues();
+  }
+);
+
+
+// ============================================================
+// 🧠 CASE LIBRARY
+// ============================================================
+
+function renderCases(filter = '') {
+
+  const box =
+    $('caseList');
+
+  const query =
+    filter.toLowerCase();
+
+
+  box.innerHTML = '';
+
+
+  const list =
+    state.cases.filter(
+      item =>
+        `
+          ${item.problem}
+          ${item.category}
+          ${item.solution}
+          ${item.lesson}
+        `
+          .toLowerCase()
+          .includes(query)
+    );
+
+
+  if (!list.length) {
+
+    empty(
+      box,
+      '🧠 No matching cases yet.'
+    );
+
+    return;
+  }
+
+
+  list.forEach(caseItem => {
+
+    const element =
+      document.createElement('div');
+
+    element.className =
+      'item';
+
+
+    element.innerHTML = `
+
+      <b>
+        🧩 ${escapeHtml(caseItem.problem)}
+      </b>
+
+      <div class="meta">
+        ${escapeHtml(
+          caseItem.category ||
+          'General'
+        )}
+      </div>
+
+      <p>
+
+        <b>✅ Solution:</b>
+
+        ${escapeHtml(
+          caseItem.solution
+        )}
+
+      </p>
+
+      <p>
+
+        <b>💡 Next time:</b>
+
+        ${escapeHtml(
+          caseItem.lesson ||
+          'No prevention note'
+        )}
+
+      </p>
+    `;
+
+
+    box.appendChild(element);
+  });
+}
+
+
+$('caseForm').addEventListener(
+  'submit',
+  event => {
+
+    event.preventDefault();
+
+
+    state.cases.unshift({
+
+      problem:
+        $('caseProblem').value.trim(),
+
+      category:
+        $('caseCategory').value.trim(),
+
+      solution:
+        $('caseSolution').value.trim(),
+
+      lesson:
+        $('caseLesson').value.trim()
+
+    });
+
+
+    event.target.reset();
+
+    addXP(25);
+
+    renderCases(
+      $('caseSearch').value
+    );
+  }
+);
+
+
+$('caseSearch').addEventListener(
+  'input',
+  event =>
+    renderCases(
+      event.target.value
+    )
+);
+
+
+// ============================================================
+// 🎓 LEARNING
+// ============================================================
+
+function renderLearning() {
+
+  const box =
+    $('learningList');
+
+  box.innerHTML = '';
+
+
+  if (!state.learning.length) {
+
+    empty(
+      box,
+      '🎓 No learning entries yet.'
+    );
+
+    return;
+  }
+
+
+  state.learning.forEach(
+    learningItem => {
+
+      const element =
+        document.createElement('div');
+
+      element.className =
+        'item';
+
+
+      element.innerHTML = `
+
+        <b>
+          🎓
+          ${escapeHtml(
+            learningItem.topic
+          )}
+        </b>
+
+
+        <div class="meta">
+
+          ${escapeHtml(
+            learningItem.source ||
+            'Personal learning'
+          )}
+
+        </div>
+
+
+        <p>
+
+          📘
+          ${escapeHtml(
+            learningItem.note
+          )}
+
+        </p>
+
+
+        <p>
+
+          ${
+            learningItem.question
+
+              ? '❓ ' +
+                escapeHtml(
+                  learningItem.question
+                )
+
+              : '✅ No open question recorded.'
+          }
+
+        </p>
+      `;
+
+
+      box.appendChild(element);
+    }
+  );
+}
+
+
+$('learningForm').addEventListener(
+  'submit',
+  event => {
+
+    event.preventDefault();
+
+
+    state.learning.unshift({
+
+      topic:
+        $('learnTopic').value.trim(),
+
+      source:
+        $('learnSource').value.trim(),
+
+      note:
+        $('learnNote').value.trim(),
+
+      question:
+        $('learnQuestion').value.trim()
+
+    });
+
+
+    event.target.reset();
+
+    addXP(15);
+
+    renderLearning();
+  }
+);
+
+
+// ============================================================
+// 📍 ATTENTION BOARD
+// ============================================================
+
+function renderAttention() {
+
+  const box =
+    $('attentionBoard');
+
+  if (!box) return;
+
+
+  box.innerHTML = '';
+
+
+  const openProblems =
+    state.issues.filter(
+      issue => !issue.solved
+    ).length;
+
+
+  const activeLoads =
+    state.loads.filter(
+      load =>
+        load.status !== 'Delivered'
+    ).length;
+
+
+  const trucksToCover =
+    Math.max(
+      0,
+      state.trucks.length -
+      activeLoads
+    );
+
+
+  const cards = [
+
+    [
+      '🚨 Open Problems',
+      openProblems,
+      'Resolve critical issues first.'
+    ],
+
+    [
+      '🚚 Trucks To Cover',
+      trucksToCover,
+      'Keep equipment moving.'
+    ],
+
+    [
+      '🎓 Knowledge Entries',
+      state.cases.length +
+      state.learning.length,
+      'Build your personal playbook.'
+    ]
+
+  ];
+
+
+  cards.forEach(
+    ([title, number, text]) => {
+
+      const element =
+        document.createElement('div');
+
+      element.className =
+        'item';
+
+
+      element.innerHTML = `
+
+        <b>
+          ${title}: ${number}
+        </b>
+
+        <div class="meta">
+          ${text}
+        </div>
+      `;
+
+
+      box.appendChild(element);
+    }
+  );
+}
+
+
+// ============================================================
+// 🏆 END OF DAY
+// ============================================================
+
+$('finishBtn').addEventListener(
+  'click',
+  () => {
+
+    const total =
+      state.missions.length;
+
+
+    const done =
+      state.missions.filter(
+        mission => mission.done
+      ).length;
+
+
+    const missionRate =
+      total
+        ? done / total
+        : 0;
+
+
+    const score =
+      Math.round(
+
+        45 * missionRate +
+
+        20 *
+        Math.min(
+          1,
+          state.loads.length / 3
+        ) +
+
+        15 *
+        Math.min(
+          1,
+          state.issues.filter(
+            issue => issue.solved
+          ).length / 2
+        ) +
+
+        20 *
+        Math.min(
+          1,
+          (
+            state.cases.length +
+            state.learning.length
+          ) / 2
+        )
+
+      );
+
+
+    const grade =
+      score >= 90 ? 'S' :
+      score >= 80 ? 'A' :
+      score >= 70 ? 'B' :
+      score >= 60 ? 'C' :
+      score >= 45 ? 'D' :
+      'F';
+
+
+    state.journal.unshift({
+
+      date:
+        new Date().toISOString(),
+
+      win:
+        $('dayWin').value.trim(),
+
+      mistake:
+        $('dayMistake').value.trim(),
+
+      improve:
+        $('dayImprove').value.trim(),
+
+      score,
+
+      grade
+
+    });
+
+
+    state.xp +=
+      grade === 'S'
+        ? 40
+        : grade === 'A'
+        ? 30
+        : grade === 'B'
+        ? 20
+        : 10;
+
+
+    save();
+
+
+    $('gradeBox').textContent =
+
+      `🏆 Daily Grade: ${grade} · ${score}/100. ` +
+
+      `Missions ${done}/${total}. ` +
+
+      (
+        grade === 'S' ||
+        grade === 'A'
+
+          ? 'Excellent operational discipline.'
+
+          : grade === 'B'
+
+          ? 'Solid day. Keep improving documentation and completion rate.'
+
+          : 'Review unfinished work and set one clear improvement for tomorrow.'
+      );
+  }
+);
+
+
+// ============================================================
+// 🛡️ SAFE HTML
+// ============================================================
+
+function escapeHtml(value) {
+
+  return String(
+    value ?? ''
+  ).replace(
+
+    /[&<>'"]/g,
+
+    character => ({
+
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+
+    }[character])
+
+  );
+}
+
+
+// ============================================================
+// 🔄 RENDER EVERYTHING
+// ============================================================
+
+function renderAll() {
+
+  renderShift();
+
+  renderMissions();
+
+  renderTrucks();
+
+  renderLoads();
+
+  renderIssues();
+
+  renderCases();
+
+  renderLearning();
+
+  updateStats();
+}
+
+
+// ============================================================
+// 🚀 START DISPATCHOS
+// ============================================================
+
+renderAll();
+
+setupSupabase();
